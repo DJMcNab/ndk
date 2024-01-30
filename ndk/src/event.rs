@@ -148,6 +148,7 @@ impl InputEvent {
     }
 }
 
+// TODO: bitflags
 /// A bitfield representing the state of modifier keys during an event.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct MetaState(pub u32);
@@ -313,6 +314,63 @@ pub enum Axis {
     Generic15 = ffi::AMOTION_EVENT_AXIS_GENERIC_15 as i32,
     Generic16 = ffi::AMOTION_EVENT_AXIS_GENERIC_16 as i32,
 
+    /// Axis constant: X gesture offset axis of a motion event.
+    ///
+    /// - For a touch pad, reports the distance that a swipe gesture has moved in the X axis, as a
+    ///   proportion of the touch pad's size. For example, if a touch pad is `1000` units wide, and
+    ///   a swipe gesture starts at `X = 500` then moves to `X = 400`, this axis would have a value
+    ///   of `-0.1`.
+    ///
+    /// These values are relative to the state from the last event, not accumulated, so developers
+    /// should make sure to process this axis value for all batched historical events.
+    ///
+    /// This axis is only set on the first pointer in a motion event.
+    #[doc(alias = "AMOTION_EVENT_AXIS_GESTURE_X_OFFSET")]
+    GestureXOffset = ffi::AMOTION_EVENT_AXIS_GESTURE_X_OFFSET as i32,
+    /// Axis constant: Y gesture offset axis of a motion event.
+    ///
+    /// The same as [`Axis::GestureXOffset`], but for the Y axis.
+    #[doc(alias = "AMOTION_EVENT_AXIS_GESTURE_Y_OFFSET")]
+    GestureYOffset = ffi::AMOTION_EVENT_AXIS_GESTURE_Y_OFFSET as i32,
+    /// Axis constant: X scroll distance axis of a motion event.
+    ///
+    /// - For a touch pad, reports the distance that should be scrolled in the X axis as a result of
+    ///   the user's two-finger scroll gesture, in display pixels.
+    ///
+    /// These values are relative to the state from the last event, not accumulated, so developers
+    /// should make sure to process this axis value for all batched historical events.
+    ///
+    /// This axis is only set on the first pointer in a motion event.
+    #[doc(alias = "AMOTION_EVENT_AXIS_GESTURE_SCROLL_X_DISTANCE")]
+    GestureScrollXDistance = ffi::AMOTION_EVENT_AXIS_GESTURE_SCROLL_X_DISTANCE as i32,
+    /// Axis constant: Y scroll distance axis of a motion event.
+    ///
+    /// The same as [`Axis::GestureScrollXDistance`], but for the Y axis.
+    #[doc(alias = "AMOTION_EVENT_AXIS_GESTURE_SCROLL_Y_DISTANCE")]
+    GestureScrollYDistance = ffi::AMOTION_EVENT_AXIS_GESTURE_SCROLL_Y_DISTANCE as i32,
+    /// Axis constant: pinch scale factor of a motion event.
+    ///
+    /// - For a touch pad, reports the change in distance between the fingers when the user is
+    ///   making a pinch gesture, as a proportion of that distance when the gesture was last
+    ///   reported. For example, if the fingers were `50` units apart and are now `52` units apart,
+    ///   the scale factor would be `1.04`.
+    ///
+    /// These values are relative to the state from the last event, not accumulated, so developers
+    /// should make sure to process this axis value for all batched historical events.
+    ///
+    /// This axis is only set on the first pointer in a motion event.
+    #[doc(alias = "AMOTION_EVENT_AXIS_GESTURE_PINCH_SCALE_FACTOR")]
+    GesturePinchScaleFactor = ffi::AMOTION_EVENT_AXIS_GESTURE_PINCH_SCALE_FACTOR as i32,
+    /// Axis constant: the number of fingers being used in a multi-finger swipe gesture.
+    ///
+    /// - For a touch pad, reports the number of fingers being used in a multi-finger swipe gesture
+    ///   (with [`MotionClassification::MultiFingerSwipe`]).
+    ///
+    /// Since [`MotionClassification::MultiFingerSwipe`] is a hidden API, so is this axis. It is
+    /// only set on the first pointer in a motion event.
+    #[doc(alias = "AMOTION_EVENT_AXIS_GESTURE_SWIPE_FINGER_COUNT")]
+    GestureSwipeFingerCount = ffi::AMOTION_EVENT_AXIS_GESTURE_SWIPE_FINGER_COUNT as i32,
+
     #[doc(hidden)]
     #[num_enum(catch_all)]
     __Unknown(i32),
@@ -335,6 +393,45 @@ pub enum ToolType {
     __Unknown(i32),
 }
 
+/// Constants that identify different gesture classification types.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, FromPrimitive, IntoPrimitive)]
+#[repr(u32)]
+#[non_exhaustive]
+#[doc(alias = "AMotionClassification")]
+pub enum MotionClassification {
+    /// No additional information is available about the current motion event stream.
+    #[doc(alias = "AMOTION_EVENT_CLASSIFICATION_NONE")]
+    None = 0,
+    /// The user's intent with respect to the current event stream is not yet determined. Events
+    /// starting in #AMOTION_EVENT_CLASSIFICATION_AMBIGUOUS_GESTURE will eventually resolve into
+    /// either [`MotionClassification::DeepPress`] or [`MotionClassification::None`].
+    /// Gestural actions, such as scrolling, should be inhibited until the classification resolves
+    /// to another value or the event stream ends.
+    #[doc(alias = "AMOTION_EVENT_CLASSIFICATION_AMBIGUOUS_GESTURE")]
+    AmbiguousGesture = 1,
+    /// The current event stream represents the user intentionally pressing harder on the screen.
+    /// This classification type should be used to accelerate the long press behaviour.
+    #[doc(alias = "AMOTION_EVENT_CLASSIFICATION_DEEP_PRESS")]
+    DeepPress = 2,
+    /// The current event stream represents the user swiping with two fingers on a touchpad.
+    #[doc(alias = "AMOTION_EVENT_CLASSIFICATION_TWO_FINGER_SWIPE")]
+    TwoFingerSwipe = 3,
+    /// The current event stream represents the user swiping with three or more fingers on a
+    /// touchpad. Unlike two-finger swipes, these are only to be handled by the system UI, which is
+    /// why they have a separate constant from two-finger swipes.
+    #[doc(alias = "AMOTION_EVENT_CLASSIFICATION_MULTI_FINGER_SWIPE")]
+    MultiFingerSwipe = 4,
+    /// The current event stream represents the user pinching with two fingers on a touchpad. The
+    /// gesture is centered around the current cursor position.
+    #[doc(alias = "AMOTION_EVENT_CLASSIFICATION_PINCH")]
+    Pinch = 5,
+
+    #[doc(hidden)]
+    #[num_enum(catch_all)]
+    __Unknown(u32),
+}
+
+// TODO: bitflags
 /// A bitfield representing the state of buttons during a motion event.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ButtonState(pub u32);
@@ -370,6 +467,7 @@ impl ButtonState {
     }
 }
 
+// TODO: bitflags
 /// A bitfield representing which edges were touched by a motion event.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EdgeFlags(pub u32);
@@ -560,7 +658,7 @@ impl MotionEvent {
     /// docs](https://developer.android.com/ndk/reference/group/input#amotionevent_getmetastate)
     #[inline]
     pub fn meta_state(&self) -> MetaState {
-        unsafe { MetaState(ffi::AMotionEvent_getMetaState(self.ptr.as_ptr()) as u32) }
+        MetaState(unsafe { ffi::AMotionEvent_getMetaState(self.ptr.as_ptr()) } as u32)
     }
 
     /// Returns the button state during this event, as a bitfield.
@@ -569,7 +667,7 @@ impl MotionEvent {
     /// docs](https://developer.android.com/ndk/reference/group/input#amotionevent_getbuttonstate)
     #[inline]
     pub fn button_state(&self) -> ButtonState {
-        unsafe { ButtonState(ffi::AMotionEvent_getButtonState(self.ptr.as_ptr()) as u32) }
+        ButtonState(unsafe { ffi::AMotionEvent_getButtonState(self.ptr.as_ptr()) } as u32)
     }
 
     /// Returns the time of the start of this gesture, in the `java.lang.System.nanoTime()` time
@@ -588,7 +686,7 @@ impl MotionEvent {
     /// docs](https://developer.android.com/ndk/reference/group/input#amotionevent_getedgeflags)
     #[inline]
     pub fn edge_flags(&self) -> EdgeFlags {
-        unsafe { EdgeFlags(ffi::AMotionEvent_getEdgeFlags(self.ptr.as_ptr()) as u32) }
+        EdgeFlags(unsafe { ffi::AMotionEvent_getEdgeFlags(self.ptr.as_ptr()) } as u32)
     }
 
     /// Returns the time of this event, in the `java.lang.System.nanoTime()` time base
@@ -606,7 +704,7 @@ impl MotionEvent {
     /// docs](https://developer.android.com/ndk/reference/group/input#amotionevent_getflags)
     #[inline]
     pub fn flags(&self) -> MotionEventFlags {
-        unsafe { MotionEventFlags(ffi::AMotionEvent_getFlags(self.ptr.as_ptr()) as u32) }
+        MotionEventFlags(unsafe { ffi::AMotionEvent_getFlags(self.ptr.as_ptr()) } as u32)
     }
 
     /// Returns the offset in the x direction between the coordinates and the raw coordinates
@@ -643,6 +741,26 @@ impl MotionEvent {
     #[inline]
     pub fn y_precision(&self) -> f32 {
         unsafe { ffi::AMotionEvent_getYPrecision(self.ptr.as_ptr()) }
+    }
+
+    /// Get the action button for the motion event. Returns a valid action button when the event is
+    /// associated with a button press or button release action. For other actions the return value
+    /// is undefined.
+    #[cfg(feature = "api-level-33")]
+    #[doc(alias = "AMotionEvent_getActionButton")]
+    // TODO: Button enum to signify only one valid value?
+    pub fn action_button(&self) -> ButtonState {
+        ButtonState(unsafe { ffi::AMotionEvent_getActionButton(self.ptr.as_ptr()) } as u32)
+    }
+
+    /// Returns the classification for the current gesture. The classification may change as more
+    /// events become available for the same gesture.
+    #[cfg(feature = "api-level-33")]
+    #[doc(alias = "AMotionEvent_getClassification")]
+    pub fn classification(&self) -> MotionClassification {
+        u32::try_from(unsafe { ffi::AMotionEvent_getClassification(self.ptr.as_ptr()) })
+            .unwrap()
+            .into()
     }
 }
 
@@ -1512,6 +1630,7 @@ impl KeyEvent {
     }
 }
 
+// TODO: bitflags
 /// Flags associated with [`KeyEvent`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct KeyEventFlags(pub u32);
