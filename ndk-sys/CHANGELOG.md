@@ -1,5 +1,7 @@
 # Unreleased
 
+- Removed `__ANDROID_API__` constant as it is always defined to the value of `__ANDROID_API_FUTURE__`. (#479)
+
 # 0.6.0 (2024-04-26)
 
 - Generate against upstream NDK build `11769913`. (#471)
